@@ -8,6 +8,10 @@ mask_before_softmax: False
 
 runner: "parallel"
 
+wandb_project: "diversity5"
+wandb_group: "3s_vs_3z"
+
+
 buffer_size: 32
 off_buffer_size: 5000 # size of the off-policy buffer
 batch_size_run: 4 #10
