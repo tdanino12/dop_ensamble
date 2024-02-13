@@ -80,7 +80,8 @@ class OffPGLearner:
         pi_taken[mask == 0] = 1.0
         log_pi_taken = th.log(pi_taken)
         coe = self.mixer.k(states).view(-1)
-
+        entropy = -(pi*log_pi_taken)
+                    
         advantages = (q_taken.view(-1) - baseline).detach()
 
         coma_loss = - ((coe * advantages * log_pi_taken) * mask).sum() / mask.sum()
@@ -122,7 +123,7 @@ class OffPGLearner:
 
         #build_target_q
         target_inputs = self.target_critic._build_inputs(on_batch, bs, max_t)
-        target_q_vals = self.target_critic.forward(target_inputs).detach()
+        target_q_vals,t_q1,t_q2,t_q3,t_q4 = self.target_critic.forward(target_inputs).detach()
         targets_taken = self.target_mixer(th.gather(target_q_vals, dim=3, index=actions).squeeze(3), states)
         target_q = build_td_lambda_targets(rewards, terminated, mask, targets_taken, self.n_agents, self.args.gamma, self.args.td_lambda).detach()
 
@@ -157,7 +158,7 @@ class OffPGLearner:
                 continue
             k = self.mixer.k(states[:, t:t+1]).unsqueeze(3)
             #b = self.mixer.b(states[:, t:t+1])
-            q_vals = self.critic.forward(inputs[:, t:t+1])
+            q_vals,q1,q2,q3,q4 = self.critic.forward(inputs[:, t:t+1])
             q_ori = q_vals
             q_vals = th.gather(q_vals, 3, index=actions[:, t:t+1]).squeeze(3)
             q_vals = self.mixer.forward(q_vals, states[:, t:t+1])
@@ -227,7 +228,7 @@ class OffPGLearner:
 
         #target_q take
         target_inputs = self.target_critic._build_inputs(batch, bs, max_t)
-        target_q_vals = self.target_critic.forward(target_inputs).detach()
+        target_q_vals,q1,q2,q3,q4 = self.target_critic.forward(target_inputs).detach()
         targets_taken = self.target_mixer(th.gather(target_q_vals, dim=3, index=actions).squeeze(3), states)
 
         #expected q
