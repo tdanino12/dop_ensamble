@@ -20,13 +20,49 @@ class OffPGCritic(nn.Module):
         self.fc_v = nn.Linear(256, 1)
         self.fc3 = nn.Linear(256, self.n_actions)
 
+        # Set up network layers
+        self.fc1_2 = nn.Linear(input_shape, 256)
+        self.fc2_2 = nn.Linear(256, 256)
+        self.fc_v_2 = nn.Linear(256, 1)
+        self.fc3_2 = nn.Linear(256, self.n_actions)
+
+        # Set up network layers
+        self.fc1_3 = nn.Linear(input_shape, 256)
+        self.fc2_3 = nn.Linear(256, 256)
+        self.fc_v_3 = nn.Linear(256, 1)
+        self.fc3_3 = nn.Linear(256, self.n_actions)
+
+        # Set up network layers
+        self.fc1_4 = nn.Linear(input_shape, 256)
+        self.fc2_4 = nn.Linear(256, 256)
+        self.fc_v_4 = nn.Linear(256, 1)
+        self.fc3_4 = nn.Linear(256, self.n_actions)
+    
     def forward(self, inputs):
         x = F.relu(self.fc1(inputs))
         x = F.relu(self.fc2(x))
         v = self.fc_v(x)
         a = self.fc3(x)
         q = a + v
-        return q
+
+        x2 = F.relu(self.fc1_2(inputs))
+        x2 = F.relu(self.fc2_2(x))
+        v_2 = self.fc_v_2(x)
+        a2 = self.fc3_2(x)
+        q2 = a2 + v_2
+
+        x3 = F.relu(self.fc1_3(inputs))
+        x3 = F.relu(self.fc2_3(x))
+        v_3 = self.fc_v_3(x)
+        a3 = self.fc3_3(x)
+        q3 = a3 + v_3
+
+        x4 = F.relu(self.fc1_4(inputs))
+        x4 = F.relu(self.fc2_4(x))
+        v_4 = self.fc_v_4(x)
+        a4 = self.fc3_4(x)
+        q4 = a4 + v_4
+        return (q+q2+q3+q4)/4
 
     def _build_inputs(self, batch, bs, max_t):
         inputs = []
