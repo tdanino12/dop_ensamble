@@ -88,8 +88,13 @@ def run_sequential(args, logger):
     # args.shield_bits_ally = env_info["shield_bits_ally"]
     # args.shield_bits_enemy = env_info["shield_bits_enemy"]
     # args.n_enemies = env_info["n_enemies"]
-
-    # Default/Base scheme
+    os.environ["WANDB_API_KEY"] = "495b87eba3dbc88f719508680483181c811852ba"
+    run = wandb.init(
+    project=args.wandb_project,
+    group=args.wandb_group,
+    name="seed if:{}".format(args.seed),
+    )
+    wandb.login(key = os.environ["WANDB_API_KEY"])    # Default/Base scheme
     scheme = {
         "state": {"vshape": env_info["state_shape"]},
         "obs": {"vshape": env_info["obs_shape"], "group": "agents"},
