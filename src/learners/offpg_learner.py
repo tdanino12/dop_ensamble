@@ -51,8 +51,13 @@ class OffPGLearner:
 
         #build q
         inputs = self.critic._build_inputs(batch, bs, max_t)
-        q_vals = self.critic.forward(inputs).detach()[:, :-1]
+        q_vals,q1,q2,q3,q4 = self.critic.forward(inputs).detach()[:, :-1]
 
+        combined_tensor = th.cat((q1,q2,q3,q4), dim=0)
+        # Calculate the variance
+        variance = th.var(combined_tensor)
+        variance = th.max(th.tensor(1)-variance),th.tensor(0))
+        
         mac_out = []
         self.mac.init_hidden(batch.batch_size)
         for t in range(batch.max_seq_length - 1):
