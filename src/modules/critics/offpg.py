@@ -62,7 +62,7 @@ class OffPGCritic(nn.Module):
         v_4 = self.fc_v_4(x)
         a4 = self.fc3_4(x)
         q4 = a4 + v_4
-        return (q+q2+q3+q4)/4
+        return (q+q2+q3+q4)/4,q,q2,q3,q4
 
     def _build_inputs(self, batch, bs, max_t):
         inputs = []
