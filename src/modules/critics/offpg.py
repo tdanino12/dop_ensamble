@@ -37,6 +37,33 @@ class OffPGCritic(nn.Module):
         self.fc2_4 = nn.Linear(256, 256)
         self.fc_v_4 = nn.Linear(256, 1)
         self.fc3_4 = nn.Linear(256, self.n_actions)
+
+
+
+        # Set up network layers
+        self.fc1_5 = nn.Linear(input_shape, 256)
+        self.fc2_5 = nn.Linear(256, 256)
+        self.fc_v_5 = nn.Linear(256, 1)
+        self.fc3_5 = nn.Linear(256, self.n_actions)
+
+        # Set up network layers
+        self.fc1_6 = nn.Linear(input_shape, 256)
+        self.fc2_6 = nn.Linear(256, 256)
+        self.fc_v_6 = nn.Linear(256, 1)
+        self.fc3_6 = nn.Linear(256, self.n_actions)
+
+        # Set up network layers
+        self.fc1_7 = nn.Linear(input_shape, 256)
+        self.fc2_7 = nn.Linear(256, 256)
+        self.fc_v_7 = nn.Linear(256, 1)
+        self.fc3_7 = nn.Linear(256, self.n_actions)
+
+        # Set up network layers
+        self.fc1_8 = nn.Linear(input_shape, 256)
+        self.fc2_8 = nn.Linear(256, 256)
+        self.fc_v_8 = nn.Linear(256, 1)
+        self.fc3_8 = nn.Linear(256, self.n_actions)
+
     
     def forward(self, inputs):
         x = F.relu(self.fc1(inputs))
