@@ -2,6 +2,23 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 
+class PGCriticNetwork(nn.Module):
+    def __init__(self, input_shape, n_actions):
+        super(PGCriticNetwork, self).__init__()
+
+        self.fc1 = nn.Linear(input_shape, 256)
+        self.fc2 = nn.Linear(256, 256)
+        self.fc_v = nn.Linear(256, 1)
+        self.fc3 = nn.Linear(256, n_actions)
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        v = self.fc_v(x)
+        a = self.fc3(x)
+        q = a + v
+        return q
+
 
 class OffPGCritic(nn.Module):
     def __init__(self, scheme, args):
@@ -13,83 +30,30 @@ class OffPGCritic(nn.Module):
 
         input_shape = self._get_input_shape(scheme)
         self.output_type = "q"
-
-        # Set up network layers
-        self.fc1 = nn.Linear(input_shape, 256)
-        self.fc2 = nn.Linear(256, 256)
-        self.fc_v = nn.Linear(256, 1)
-        self.fc3 = nn.Linear(256, self.n_actions)
-
-        # Set up network layers
-        self.fc1_2 = nn.Linear(input_shape, 256)
-        self.fc2_2 = nn.Linear(256, 256)
-        self.fc_v_2 = nn.Linear(256, 1)
-        self.fc3_2 = nn.Linear(256, self.n_actions)
-
-        # Set up network layers
-        self.fc1_3 = nn.Linear(input_shape, 256)
-        self.fc2_3 = nn.Linear(256, 256)
-        self.fc_v_3 = nn.Linear(256, 1)
-        self.fc3_3 = nn.Linear(256, self.n_actions)
-
-        # Set up network layers
-        self.fc1_4 = nn.Linear(input_shape, 256)
-        self.fc2_4 = nn.Linear(256, 256)
-        self.fc_v_4 = nn.Linear(256, 1)
-        self.fc3_4 = nn.Linear(256, self.n_actions)
-
-
-
-        # Set up network layers
-        self.fc1_5 = nn.Linear(input_shape, 256)
-        self.fc2_5 = nn.Linear(256, 256)
-        self.fc_v_5 = nn.Linear(256, 1)
-        self.fc3_5 = nn.Linear(256, self.n_actions)
-
-        # Set up network layers
-        self.fc1_6 = nn.Linear(input_shape, 256)
-        self.fc2_6 = nn.Linear(256, 256)
-        self.fc_v_6 = nn.Linear(256, 1)
-        self.fc3_6 = nn.Linear(256, self.n_actions)
-
-        # Set up network layers
-        self.fc1_7 = nn.Linear(input_shape, 256)
-        self.fc2_7 = nn.Linear(256, 256)
-        self.fc_v_7 = nn.Linear(256, 1)
-        self.fc3_7 = nn.Linear(256, self.n_actions)
-
-        # Set up network layers
-        self.fc1_8 = nn.Linear(input_shape, 256)
-        self.fc2_8 = nn.Linear(256, 256)
-        self.fc_v_8 = nn.Linear(256, 1)
-        self.fc3_8 = nn.Linear(256, self.n_actions)
-
-    
+        
+        self.network1 = PGCriticNetwork(input_shape, self.n_actions)
+        self.network2 = PGCriticNetwork(input_shape, self.n_actions)
+        self.network3 = PGCriticNetwork(input_shape, self.n_actions)
+        self.network4 = PGCriticNetwork(input_shape, self.n_actions)
+        self.network5 = PGCriticNetwork(input_shape, self.n_actions)
+        self.network6 = PGCriticNetwork(input_shape, self.n_actions)
+        self.network7 = PGCriticNetwork(input_shape, self.n_actions)
+        self.network8 = PGCriticNetwork(input_shape, self.n_actions)
+        self.network9 = PGCriticNetwork(input_shape, self.n_actions)
+        self.network10 = PGCriticNetwork(input_shape, self.n_actions)    
     def forward(self, inputs):
-        x = F.relu(self.fc1(inputs))
-        x = F.relu(self.fc2(x))
-        v = self.fc_v(x)
-        a = self.fc3(x)
-        q = a + v
 
-        x2 = F.relu(self.fc1_2(inputs))
-        x2 = F.relu(self.fc2_2(x))
-        v_2 = self.fc_v_2(x)
-        a2 = self.fc3_2(x)
-        q2 = a2 + v_2
-
-        x3 = F.relu(self.fc1_3(inputs))
-        x3 = F.relu(self.fc2_3(x))
-        v_3 = self.fc_v_3(x)
-        a3 = self.fc3_3(x)
-        q3 = a3 + v_3
-
-        x4 = F.relu(self.fc1_4(inputs))
-        x4 = F.relu(self.fc2_4(x))
-        v_4 = self.fc_v_4(x)
-        a4 = self.fc3_4(x)
-        q4 = a4 + v_4
-        return (q+q2+q3+q4)/4,q,q2,q3,q4
+        q = self.network1(inputs)
+        q2 = self.network2(inputs)
+        q3 = self.network3(inputs)
+        q4 = self.network4(inputs)
+        q5 = self.network5(inputs)
+        q6 = self.network6(inputs)
+        q7 = self.network7(inputs)
+        q8 = self.network8(inputs)
+        q9 = self.network9(inputs)
+        q10 = self.network10(inputs)        
+        return (q+q2+q3+q4+q5+q6+q7+q8+q9+q10)/th.tensor(10),q,q2,q3,q4,q5,q6,q7,q8,q9,q10
 
     def _build_inputs(self, batch, bs, max_t):
         inputs = []
