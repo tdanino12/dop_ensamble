@@ -16,7 +16,8 @@ class OffPGLearner:
         self.n_actions = args.n_actions
         self.mac = mac
         self.logger = logger
-
+        self.bound = 2
+        
         self.last_target_update_step = 0
         self.critic_training_steps = 0
 
@@ -51,13 +52,8 @@ class OffPGLearner:
 
         #build q
         inputs = self.critic._build_inputs(batch, bs, max_t)
-        q_vals,q1,q2,q3,q4 = self.critic.forward(inputs).detach()[:, :-1]
+        q_vals,q1,q2,q3,q4,q5,q6,q7,q8,q9,q10 = self.critic.forward(inputs)
 
-        combined_tensor = th.cat((q1,q2,q3,q4), dim=0)
-        # Calculate the variance
-        variance = th.var(combined_tensor)
-        variance = th.max(th.tensor(1)-variance),th.tensor(0))
-        
         mac_out = []
         self.mac.init_hidden(batch.batch_size)
         for t in range(batch.max_seq_length - 1):
@@ -123,7 +119,20 @@ class OffPGLearner:
 
         #build_target_q
         target_inputs = self.target_critic._build_inputs(on_batch, bs, max_t)
-        target_q_vals,t_q1,t_q2,t_q3,t_q4 = self.target_critic.forward(target_inputs).detach()
+        target_q_vals,t_q1,t_q2,t_q3,t_q4,t_q5,t_q6,t_q7,t_q8,t_q9,t_q10 = self.target_critic.forward(target_inputs)
+        target_q_vals = target_q_vals.detach()
+
+
+        combined_tensor = th.cat((t_q1,t_q2,t_q3,t_q4,t_q5,t_q6,t_q7,t_q8,t_q9,t_q10), dim=-1)
+
+        variance = th.var(combined_tensor,dim=-1)
+        total_var = th.sum(variance,dim=-1)
+        total_var = total_var.unsqueeze(dim=-1)
+        total_var = total_var.clone().detach()
+        total_var = total_var[:,:-1]
+
+        target_q = target_q-th.tensor(0.99)*th.tensor(0.01)*th.clamp(total_var,0,self.bound)
+        
         targets_taken = self.target_mixer(th.gather(target_q_vals, dim=3, index=actions).squeeze(3), states)
         target_q = build_td_lambda_targets(rewards, terminated, mask, targets_taken, self.n_agents, self.args.gamma, self.args.td_lambda).detach()
 
@@ -158,13 +167,41 @@ class OffPGLearner:
                 continue
             k = self.mixer.k(states[:, t:t+1]).unsqueeze(3)
             #b = self.mixer.b(states[:, t:t+1])
-            q_vals,q1,q2,q3,q4 = self.critic.forward(inputs[:, t:t+1])
+            q_vals,q1,q2,q3,q4,q5,q6,q7,q8,q9,q10  = self.critic.forward(inputs[:, t:t+1])
             q_ori = q_vals
             q_vals = th.gather(q_vals, 3, index=actions[:, t:t+1]).squeeze(3)
             q_vals = self.mixer.forward(q_vals, states[:, t:t+1])
             target_q_t = target_q[:, t:t+1].detach()
             q_err = (q_vals - target_q_t) * mask_t
             critic_loss = (q_err ** 2).sum() / mask_t.sum()
+
+            if(t==(max_t-2)):
+                #################
+                regularization_norm = []
+                # Get the norm of parameters for each network
+                net = [self.critic.network1,self.critic.network2,self.critic.network3,self.critic.network4,self.critic.network5,
+                        self.critic.network6,self.critic.network7,self.critic.network8,self.critic.network9,self.critic.network10]
+                for network in net:
+                    params = th.nn.utils.parameters_to_vector(network.parameters())
+                    params_norm = th.norm(params,p=2)
+                    regularization_norm.append(params_norm)
+
+                # Stack the tensors along a new dimension (default is dim=0)
+                stacked_tensor = th.stack(regularization_norm)
+
+                # Calculate the product of all elements in the stacked tensor
+                product = th.prod(stacked_tensor)
+                product = th.pow(product, 1/10)
+
+                total_norm = th.tensor(0.0)
+                for i in regularization_norm:
+                    total_norm += th.pow(th.log(i)- th.log(product),2)
+                total_norm = total_norm/th.tensor(10)
+                #total_norm = total_norm.clone().detach()
+                ################
+                critic_loss+=th.tensor(-0.01)*total_norm
+
+            
             #Here introduce the loss for Qi
             v_vals = th.sum(q_ori * mac_out[:, t:t+1], dim=3, keepdim=True)
             ad_vals = q_ori - v_vals
@@ -228,7 +265,7 @@ class OffPGLearner:
 
         #target_q take
         target_inputs = self.target_critic._build_inputs(batch, bs, max_t)
-        target_q_vals,q1,q2,q3,q4 = self.target_critic.forward(target_inputs).detach()
+        target_q_vals,q1,q2,q3,q4,q5,q6,q7,q8,q9,q10 = self.target_critic.forward(target_inputs).detach()
         targets_taken = self.target_mixer(th.gather(target_q_vals, dim=3, index=actions).squeeze(3), states)
 
         #expected q
@@ -243,6 +280,21 @@ class OffPGLearner:
         #compute target
         target_q =  build_target_q(td_q, targets_taken[:, :-1], critic_mac, mask, self.args.gamma, self.args.tb_lambda, self.args.step).detach()
 
+
+        combined_tensor = th.cat((q1,q2,q3,q4,q5,q6,q7,q8,q9,q10), dim=-1)
+
+        # Calculate the variance
+        variance = th.var(combined_tensor,dim=-1)
+        #all_weights = all_weights.view(variance.shape[0],variance.shape[1],variance.shape[2])
+        #####variance = variance*all_weights
+
+        total_var = th.sum(variance,dim=-1)
+        total_var = total_var.unsqueeze(dim=-1)
+        total_var = total_var.clone().detach()
+        total_var = total_var[:,:-1]
+
+        target_q = target_q-th.tensor(0.99)*th.tensor(0.01)*th.clamp(total_var,0,self.bound)
+        
         inputs = self.critic._build_inputs(batch, bs, max_t)
 
         return target_q, inputs, mask, actions, mac_out
